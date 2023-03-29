@@ -1,3 +1,3 @@
 # Overview
 
-This layer "backports" bleading edge gstreamer from the master branch of OE into our current stable kirkstone builds.
+This layer "backports" bleeding edge gstreamer from the master branch of OE into our current stable kirkstone builds.
