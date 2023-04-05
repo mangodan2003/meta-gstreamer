@@ -1,8 +1,8 @@
 SUMMARY = "Rust compiler and runtime libaries"
 HOMEPAGE = "http://www.rust-lang.org"
 SECTION = "devel"
-LICENSE = "(MIT | Apache-2.0) & Unicode-TOU"
-LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=c2cccf560306876da3913d79062a54b9"
+LICENSE = "MIT | Apache-2.0"
+LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=93a95682d51b4cb0a633a97046940ef0"
 
 inherit rust
 inherit cargo_common
@@ -11,20 +11,7 @@ DEPENDS += "file-native python3-native"
 DEPENDS:append:class-native = " rust-llvm-native"
 DEPENDS:append:class-nativesdk = " nativesdk-rust-llvm"
 
-DEPENDS += "rust-llvm (=${PV})"
-
-RDEPENDS:${PN}:append:class-target = " gcc g++ binutils"
-
-# Otherwise we'll depend on what we provide
-INHIBIT_DEFAULT_RUST_DEPS:class-native = "1"
-# We don't need to depend on gcc-native because yocto assumes it exists
-PROVIDES:class-native = "virtual/${TARGET_PREFIX}rust"
-
 S = "${RUSTSRC}"
-
-# Use at your own risk, accepted values are stable, beta and nightly
-RUST_CHANNEL ?= "stable"
-PV .= "${@bb.utils.contains('RUST_CHANNEL', 'stable', '', '-${RUST_CHANNEL}', d)}"
 
 export FORCE_CRATE_HASH="${BB_TASKHASH}"
 
@@ -129,7 +116,7 @@ python do_configure() {
     # [rust]
     config.add_section("rust")
     config.set("rust", "rpath", e(True))
-    config.set("rust", "channel", e(d.expand("${RUST_CHANNEL}")))
+    config.set("rust", "channel", e("stable"))
 
     # Whether or not to optimize the compiler and standard library
     config.set("rust", "optimize", e(True))
@@ -185,6 +172,7 @@ python do_configure() {
     bb.build.exec_func("setup_cargo_environment", d)
 }
 
+
 rust_runx () {
     echo "COMPILE ${PN}" "$@"
 
@@ -200,7 +188,7 @@ rust_runx () {
 
     # Copy the natively built llvm-config into the target so we can run it. Horrible,
     # but works!
-    if [ ${RUST_ALTERNATE_EXE_PATH_NATIVE} != ${RUST_ALTERNATE_EXE_PATH} -a ! -f ${RUST_ALTERNATE_EXE_PATH} ]; then
+    if [ ${RUST_ALTERNATE_EXE_PATH_NATIVE} != ${RUST_ALTERNATE_EXE_PATH} ]; then
         mkdir -p `dirname ${RUST_ALTERNATE_EXE_PATH}`
         cp ${RUST_ALTERNATE_EXE_PATH_NATIVE} ${RUST_ALTERNATE_EXE_PATH}
         chrpath -d ${RUST_ALTERNATE_EXE_PATH}
@@ -212,141 +200,20 @@ rust_runx () {
 }
 rust_runx[vardepsexclude] += "PARALLEL_MAKE"
 
-require rust-source.inc
-require rust-snapshot.inc
-
-INSANE_SKIP:${PN}:class-native = "already-stripped"
-FILES:${PN} += "${libdir}/rustlib"
-FILES:${PN} += "${libdir}/*.so"
-FILES:${PN}-dev = ""
-
 do_compile () {
+    rust_runx build
 }
 
-ALLOW_EMPTY:${PN} = "1"
+rust_do_install () {
+    mkdir -p ${D}${bindir}
+    cp build/${RUST_HOST_SYS}/stage2/bin/* ${D}${bindir}
 
-PACKAGES =+ "${PN}-tools-clippy ${PN}-tools-rustfmt"
-FILES:${PN}-tools-clippy = "${bindir}/cargo-clippy ${bindir}/clippy-driver"
-FILES:${PN}-tools-rustfmt = "${bindir}/rustfmt"
-RDEPENDS:${PN}-tools-clippy = "${PN}"
-RDEPENDS:${PN}-tools-rustfmt = "${PN}"
-
-SUMMARY:${PN}-tools-clippy = "A collection of lints to catch common mistakes and improve your Rust code"
-SUMMARY:${PN}-tools-rustfmt = "A tool for formatting Rust code according to style guidelines"
+    mkdir -p ${D}${libdir}/rustlib
+    cp -pRd build/${RUST_HOST_SYS}/stage2/lib/* ${D}${libdir}
+    # Remove absolute symlink so bitbake doesn't complain
+    rm -f ${D}${libdir}/rustlib/src/rust
+}
 
 do_install () {
     rust_do_install
 }
-
-rust_do_install() {
-    rust_runx install
-}
-
-rust_do_install:class-nativesdk() {
-    export PSEUDO_UNLOAD=1
-    rust_runx install
-    rust_runx install clippy
-    rust_runx install rustfmt
-    unset PSEUDO_UNLOAD
-
-    install -d ${D}${bindir}
-    for i in cargo-clippy clippy-driver rustfmt; do
-        cp build/${RUST_BUILD_SYS}/stage2-tools/${RUST_HOST_SYS}/release/$i ${D}${bindir}
-        chrpath -r "\$ORIGIN/../lib" ${D}${bindir}/$i
-    done
-
-    chown root:root ${D}/ -R
-    rm ${D}${libdir}/rustlib/uninstall.sh
-    rm ${D}${libdir}/rustlib/install.log
-    rm ${D}${libdir}/rustlib/manifest*
-}
-
-EXTRA_TOOLS ?= "cargo-clippy clippy-driver rustfmt"
-rust_do_install:class-target() {
-    export PSEUDO_UNLOAD=1
-    rust_runx install
-    rust_runx install clippy
-    rust_runx install rustfmt
-    unset PSEUDO_UNLOAD
-
-    install -d ${D}${bindir}
-    for i in ${EXTRA_TOOLS}; do
-        cp build/${RUST_BUILD_SYS}/stage2-tools/${RUST_HOST_SYS}/release/$i ${D}${bindir}
-        chrpath -r "\$ORIGIN/../lib" ${D}${bindir}/$i
-    done
-
-    install -d ${D}${libdir}/rustlib/${RUST_HOST_SYS}
-    install -m 0644 ${WORKDIR}/rust-targets/${RUST_HOST_SYS}.json ${D}${libdir}/rustlib/${RUST_HOST_SYS}/target.json
-
-    chown root:root ${D}/ -R
-    rm ${D}${libdir}/rustlib/uninstall.sh
-    rm ${D}${libdir}/rustlib/install.log
-    rm ${D}${libdir}/rustlib/manifest*
-}
-
-addtask do_update_snapshot after do_patch
-do_update_snapshot[nostamp] = "1"
-
-# Run with `bitbake -c update_snapshot rust` to update `rust-snapshot.inc`
-# with the checksums for the rust snapshot associated with this rustc-src
-# tarball.
-python do_update_snapshot() {
-    import json
-    import re
-    import sys
-
-    from collections import defaultdict
-
-    with open(os.path.join(d.getVar("S"), "src", "stage0.json")) as f:
-        j = json.load(f)
-
-    config_dist_server = j['config']['dist_server']
-    compiler_date = j['compiler']['date']
-    compiler_version = j['compiler']['version']
-
-    src_uri = defaultdict(list)
-    for k, v in j['checksums_sha256'].items():
-        m = re.search(f"dist/{compiler_date}/(?P<component>.*)-{compiler_version}-(?P<arch>.*)-unknown-linux-gnu\\.tar\\.xz", k)
-        if m:
-            component = m.group('component')
-            arch = m.group('arch')
-            src_uri[arch].append(f"SRC_URI[{component}-snapshot-{arch}.sha256sum] = \"{v}\"")
-
-    snapshot = """\
-## This is information on the rust-snapshot (binary) used to build our current release.
-## snapshot info is taken from rust/src/stage0.json
-## Rust is self-hosting and bootstraps itself with a pre-built previous version of itself.
-## The exact (previous) version that has been used is specified in the source tarball.
-## The version is replicated here.
-
-SNAPSHOT_VERSION = "%s"
-
-""" % compiler_version
-
-    for arch, components in src_uri.items():
-        snapshot += "\n".join(components) + "\n\n"
-
-    snapshot += """\
-SRC_URI += " \\
-    ${RUST_DIST_SERVER}/dist/${RUST_STD_SNAPSHOT}.tar.xz;name=rust-std-snapshot-${RUST_BUILD_ARCH};subdir=rust-snapshot-components \\
-    ${RUST_DIST_SERVER}/dist/${RUSTC_SNAPSHOT}.tar.xz;name=rustc-snapshot-${RUST_BUILD_ARCH};subdir=rust-snapshot-components \\
-    ${RUST_DIST_SERVER}/dist/${CARGO_SNAPSHOT}.tar.xz;name=cargo-snapshot-${RUST_BUILD_ARCH};subdir=rust-snapshot-components \\
-"
-
-RUST_DIST_SERVER = "%s"
-
-RUST_STD_SNAPSHOT = "rust-std-${SNAPSHOT_VERSION}-${RUST_BUILD_ARCH}-unknown-linux-gnu"
-RUSTC_SNAPSHOT = "rustc-${SNAPSHOT_VERSION}-${RUST_BUILD_ARCH}-unknown-linux-gnu"
-CARGO_SNAPSHOT = "cargo-${SNAPSHOT_VERSION}-${RUST_BUILD_ARCH}-unknown-linux-gnu"
-""" % config_dist_server
-
-    with open(os.path.join(d.getVar("THISDIR"), "rust-snapshot.inc"), "w") as f:
-        f.write(snapshot)
-}
-
-RUSTLIB_DEP:class-nativesdk = ""
-
-# musl builds include libunwind.a
-INSANE_SKIP:${PN} = "staticdev"
-
-BBCLASSEXTEND = "native nativesdk"
