@@ -11,7 +11,7 @@ LIC_FILES_CHKSUM = "file://COPYING.LIB;md5=4fbd65380cdd255951079008b364516c"
 
 SRC_URI = "https://gstreamer.freedesktop.org/src/${REALPN}/${REALPN}-${PV}.tar.xz"
 
-SRC_URI[sha256sum] = "593ccad19f88e5fa29f40f98356c007806bd535828707b1406944d16a90bdff5"
+SRC_URI[sha256sum] = "423b57db7fc5f9137dadf17cb3853a47438d63cd4ba6889a882e63fb5be997bc"
 
 S = "${WORKDIR}/${REALPN}-${PV}"
 DEPENDS = "libva gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad"
