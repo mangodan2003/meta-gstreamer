@@ -21,23 +21,9 @@ In file included from /mnt/b/yoe/build/tmp/work/cortexa7t2hf-neon-vfpv4-yoe-linu
 Upstream-Status: Pending
 Signed-off-by: Khem Raj <raj.khem@gmail.com>
 ---
- ext/qt/gstqsgtexture.cc | 2 +-
  ext/qt/qtwindow.cc      | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/ext/qt/gstqsgtexture.cc b/ext/qt/gstqsgtexture.cc
-index a05d26e..4cc9fc6 100644
---- a/ext/qt/gstqsgtexture.cc
-+++ b/ext/qt/gstqsgtexture.cc
-@@ -27,7 +27,7 @@
- 
- #include <gst/video/video.h>
- #include <gst/gl/gl.h>
--#include <gst/gl/gstglfuncs.h>
-+#include <ext/qt/gstqtgl.h>
- #include "gstqsgtexture.h"
- 
- #define GST_CAT_DEFAULT gst_qsg_texture_debug
 diff --git a/ext/qt/qtwindow.cc b/ext/qt/qtwindow.cc
 index 9360c33..0dfd3f1 100644
 --- a/ext/qt/qtwindow.cc
