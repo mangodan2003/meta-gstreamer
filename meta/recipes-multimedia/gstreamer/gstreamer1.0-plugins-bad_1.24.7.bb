@@ -9,7 +9,7 @@ SRC_URI = "https://gstreamer.freedesktop.org/src/gst-plugins-bad/gst-plugins-bad
            file://0001-fix-maybe-uninitialized-warnings-when-compiling-with.patch \
            file://0002-avoid-including-sys-poll.h-directly.patch \
            "
-SRC_URI[sha256sum] = "e90f26c7dc9c76f4aa599b758cfd6d8c10d6a0b9cb265ba2c3c9bdf3888558f8"
+SRC_URI[sha256sum] = "75d513fc0ba635fb1f39786d890b73fbac5f4bc88ff39f2a9ff62f4b8f428f22"
 
 S = "${WORKDIR}/gst-plugins-bad-${PV}"
 

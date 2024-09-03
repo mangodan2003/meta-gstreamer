@@ -7,7 +7,7 @@ BUGTRACKER = "https://gitlab.freedesktop.org/gstreamer/gst-plugins-good/-/issues
 SRC_URI = "https://gstreamer.freedesktop.org/src/gst-plugins-good/gst-plugins-good-${PV}.tar.xz \
            file://0001-qt-include-ext-qt-gstqtgl.h-instead-of-gst-gl-gstglf.patch"
 
-SRC_URI[sha256sum] = "150f914e61dc05600b68b88ca103c7cc227130158e389ea9ea159f4050a2ebb0"
+SRC_URI[sha256sum] = "759acb11e6de8373ff8cbb5e7ab8eb9a38631be81cf24220267b001eb55593c1"
 
 S = "${WORKDIR}/gst-plugins-good-${PV}"
 
